@@ -104,6 +104,7 @@ export const useStore = create<SearchState>((set, get) => ({
     },
 
     async submit() {
+        console.info("[search] submit", { selected: get().selected });
         const sel = get().selected;
         set({ error: undefined });
         if (!sel || sel.type !== "country") {
@@ -117,6 +118,7 @@ export const useStore = create<SearchState>((set, get) => ({
         set({ isSearching: true, error: undefined });
 
         let start: StartSearchResponse;
+
         try {
             start = await unwrap<StartSearchResponse>(await startSearchPrices(sel.id));
         } catch (e: any) {
@@ -126,7 +128,7 @@ export const useStore = create<SearchState>((set, get) => ({
 
         const token = start.token;
         set({ activeToken: token });
-
+        console.info("[search] start ok", { token, waitUntil: start.waitUntil });
         const waitUntil = async (iso: string) => {
             const ms = Math.max(0, new Date(iso).getTime() - Date.now());
             await new Promise(res => setTimeout(res, ms));
@@ -139,20 +141,27 @@ export const useStore = create<SearchState>((set, get) => ({
             await waitUntil(start.waitUntil);
 
             try {
+                console.info("[search] poll", { token, at: new Date().toISOString() });
                 const { prices } = await unwrap<{ prices: PricesMap }>(await getSearchPrices(token));
                 set({
                     pricesByCountry: {
                         ...get().pricesByCountry,
                         [sel.id]: prices
                     },
-                    isSearching: false
+                    isSearching: false,
+                    activeToken: undefined,
+                    error: undefined
                 });
+                console.info("[search] success", { offers: Object.keys(prices).length });
                 return;
             } catch (e: any) {
                 const status = e?.status;
                 const payload = e?.payload;
+                console.info("[search] error", { status, payload });
+
                 if (status === 425 && payload?.waitUntil) {
                     start.waitUntil = payload.waitUntil;
+                    console.info("[search] 425 → next waitUntil", payload?.waitUntil);
                     continue;
                 }
                 if (retriesLeft > 0) {
@@ -160,7 +169,12 @@ export const useStore = create<SearchState>((set, get) => ({
                     await new Promise(res => setTimeout(res, 600));
                     continue;
                 }
-                set({ isSearching: false, error: e?.message || "Сталася помилка під час пошуку" });
+                set({
+                    isSearching: false,
+                    activeToken: undefined,
+                    error: e?.message || "Сталася помилка під час пошуку"
+                });
+
                 return;
             }
         }

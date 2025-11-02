@@ -40,6 +40,11 @@ body {
     width: 100%;
 }
 
+.actionsRow {
+    display: flex;
+    gap: 8px;
+}
+
 .btnPrimary {
     align-self: flex-start;
     padding: 10px 22px;
@@ -50,9 +55,36 @@ body {
     cursor: pointer;
     font-size: 14px;
     font-weight: 600;
-    transition: background .2s ease;
+    transition: background 0.2s ease, opacity 0.2s ease;
 }
 
 .btnPrimary:hover {
     background: #000;
+}
+
+.btnPrimary:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.btnGhost:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.loader, .alert, .empty, .ok {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+}
+
+.alert.error {
+    background: #fff5f5;
+    border-color: #fecaca;
+    color: #991b1b;
+}
+
+.empty {
+    color: #374151;
 }
