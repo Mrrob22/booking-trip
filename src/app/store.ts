@@ -5,6 +5,7 @@ import {
     getCountries, searchGeo, startSearchPrices, getSearchPrices,
     stopSearchPrices, getHotels
 } from "../api/api";
+import { includesNormalized } from "./utils";
 
 type GeoType = "country" | "city" | "hotel";
 
@@ -14,6 +15,8 @@ type SearchState = {
     countries?: CountriesMap;
     query: string;
     selected: Selected;
+    lastGeoQuery: string;
+    geoReqSeq: number;
     activeToken?: string;
     isSearching: boolean;
     isCancelling: boolean;
@@ -41,6 +44,8 @@ export const useStore = create<SearchState>((set, get) => ({
     pricesByCountry: {},
     hotelsCache: {},
     geo: undefined,
+    lastGeoQuery: "",
+    geoReqSeq: 0,
 
     async loadCountries() {
         const data = await unwrap<CountriesMap>(await getCountries());
@@ -52,8 +57,24 @@ export const useStore = create<SearchState>((set, get) => ({
     },
 
     async searchGeo(q) {
+        const reqId = get().geoReqSeq + 1;
+        set({ geoReqSeq: reqId });
         const data = await unwrap<GeoResponse>(await searchGeo(q));
-        set({ geo: data });
+        if (get().geoReqSeq === reqId) {
+            const filtered: GeoResponse = {};
+            if (q) {
+                for (const k of Object.keys(data)) {
+                    const e: any = data[k];
+                    if (e?.name && includesNormalized(e.name, q)) {
+                        filtered[k] = e;
+                    }
+                }
+            }
+            set({
+                geo: q ? filtered : data,
+                lastGeoQuery: q
+            });
+        }
     },
 
     select({ type, id, label }) {

@@ -28,6 +28,11 @@ class DB {
         id: "34",
         flag: "https://flagcdn.com/w40/gr.png",
       },
+      804: {
+        name: "Україна",
+        id: "804",
+        flag: "https://flagcdn.com/w40/ua.png"
+      },
     };
 
     this.cities = {
