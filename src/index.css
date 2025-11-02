@@ -88,3 +88,27 @@ body {
 .empty {
     color: #374151;
 }
+
+.btnSecondary {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #111827;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btnSecondary:hover {
+    background: #f9fafb;
+}
+
+.btnSecondary[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btnPrimary[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

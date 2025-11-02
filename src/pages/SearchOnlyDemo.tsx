@@ -63,12 +63,16 @@ export default function SearchOnlyDemo() {
 
     return (
         <form onSubmit={onSubmit} className="searchForm">
-            <SearchInput />
+            <SearchInput/>
             <div className="actionsRow">
-                <button type="submit" className="btnPrimary" disabled={isSearching || isCancelling}>
-                    {isSearching ? "Шукаємо..." : "Знайти"}
+                <button
+                    type="submit"
+                    className="btnPrimary"
+                    disabled={isSearching || isCancelling}
+                >
+                    {isCancelling ? "Скасовуємо…" : isSearching ? "Шукаємо..." : "Знайти"}
                 </button>
-                {isSearching && (
+                {(isSearching || isCancelling) && (
                     <button
                         type="button"
                         className="btnGhost"
@@ -79,6 +83,18 @@ export default function SearchOnlyDemo() {
                         {isCancelling ? "Скасовуємо..." : "Скасувати"}
                     </button>
                 )}
+                <button
+                    type="button"
+                    className="btnSecondary"
+                    onClick={async () => {
+                        await cancelActive();
+                        await submit();
+                    }}
+                    disabled={isCancelling || isSearching}
+                    title="Перезапустити пошук із поточними параметрами"
+                >
+                    Перезапустити
+                </button>
             </div>
             {(isSearching || isLoadingHotels) && (
                 <div className="loader">Зачекайте, триває пошук...</div>
@@ -89,7 +105,7 @@ export default function SearchOnlyDemo() {
             {!isSearching && !error && currentCountryId && (
                 <>
                     {hasResults ? (
-                        <ResultsGrid items={viewOffers} />
+                        <ResultsGrid items={viewOffers}/>
                     ) : (
                         <div className="empty">За вашим запитом турів не знайдено.</div>
                     )}

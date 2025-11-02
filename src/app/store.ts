@@ -11,7 +11,7 @@ type GeoType = "country" | "city" | "hotel";
 
 type Selected = { type: GeoType; id: string; label: string } | null;
 
-type SearchState = {
+export type SearchState = {
     countries?: CountriesMap;
     query: string;
     selected: Selected;
@@ -72,7 +72,7 @@ export const useStore = create<SearchState>((set, get) => ({
             }
             set({
                 geo: q ? filtered : data,
-                lastGeoQuery: q
+                lastGeoQuery: q,
             });
         }
     },
@@ -84,7 +84,6 @@ export const useStore = create<SearchState>((set, get) => ({
     async ensureHotels(countryId) {
         const { hotelsCache } = get();
         if (hotelsCache[countryId]) return hotelsCache[countryId];
-
         const data = await unwrap<HotelsMap>(await getHotels(countryId));
         set({ hotelsCache: { ...get().hotelsCache, [countryId]: data } });
         return data;
@@ -97,14 +96,12 @@ export const useStore = create<SearchState>((set, get) => ({
         try {
             await unwrap(await stopSearchPrices(token));
         } catch {
-
         } finally {
             set({ isCancelling: false, activeToken: undefined, isSearching: false });
         }
     },
 
     async submit() {
-        console.info("[search] submit", { selected: get().selected });
         const sel = get().selected;
         set({ error: undefined });
         if (!sel || sel.type !== "country") {
@@ -114,11 +111,8 @@ export const useStore = create<SearchState>((set, get) => ({
         if (get().activeToken) {
             await get().cancelActive();
         }
-
         set({ isSearching: true, error: undefined });
-
         let start: StartSearchResponse;
-
         try {
             start = await unwrap<StartSearchResponse>(await startSearchPrices(sel.id));
         } catch (e: any) {
@@ -128,53 +122,47 @@ export const useStore = create<SearchState>((set, get) => ({
 
         const token = start.token;
         set({ activeToken: token });
-        console.info("[search] start ok", { token, waitUntil: start.waitUntil });
         const waitUntil = async (iso: string) => {
             const ms = Math.max(0, new Date(iso).getTime() - Date.now());
-            await new Promise(res => setTimeout(res, ms));
+            await new Promise((res) => setTimeout(res, ms));
         };
 
         let retriesLeft = 2;
         while (true) {
             if (get().activeToken !== token) return;
-
             await waitUntil(start.waitUntil);
-
             try {
-                console.info("[search] poll", { token, at: new Date().toISOString() });
-                const { prices } = await unwrap<{ prices: PricesMap }>(await getSearchPrices(token));
-                set({
+                const { prices } = await unwrap<{ prices: PricesMap }>(
+                    await getSearchPrices(token)
+                );
+                if (get().activeToken !== token) return;
+                set((state) => ({
                     pricesByCountry: {
-                        ...get().pricesByCountry,
-                        [sel.id]: prices
+                        ...state.pricesByCountry,
+                        [sel.id]: prices,
                     },
                     isSearching: false,
                     activeToken: undefined,
-                    error: undefined
-                });
-                console.info("[search] success", { offers: Object.keys(prices).length });
+                    error: undefined,
+                }));
                 return;
             } catch (e: any) {
                 const status = e?.status;
                 const payload = e?.payload;
-                console.info("[search] error", { status, payload });
-
                 if (status === 425 && payload?.waitUntil) {
                     start.waitUntil = payload.waitUntil;
-                    console.info("[search] 425 → next waitUntil", payload?.waitUntil);
                     continue;
                 }
                 if (retriesLeft > 0) {
                     retriesLeft -= 1;
-                    await new Promise(res => setTimeout(res, 600));
+                    await new Promise((res) => setTimeout(res, 600));
                     continue;
                 }
                 set({
                     isSearching: false,
                     activeToken: undefined,
-                    error: e?.message || "Сталася помилка під час пошуку"
+                    error: e?.message || "Сталася помилка під час пошуку",
                 });
-
                 return;
             }
         }
