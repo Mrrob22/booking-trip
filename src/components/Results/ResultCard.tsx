@@ -1,26 +1,10 @@
 import React from "react";
 import type { OfferVM } from "./ResultsGrid";
 import "./Results.css";
-
-function formatDate(s: string) {
-    if (!s) return "";
-    const d = new Date(s);
-    if (Number.isNaN(d.getTime())) return s;
-    return d.toLocaleDateString("uk-UA");
-}
-function formatMoney(n: number) {
-    try {
-        return new Intl.NumberFormat("uk-UA", {
-            style: "currency",
-            currency: "UAH",
-            maximumFractionDigits: 0,
-        }).format(n);
-    } catch {
-        return `${(n ?? 0).toLocaleString("uk-UA")} грн`;
-    }
-}
+import { toUAH, formatUAH, formatDateUA } from "../../app/utils";
 
 export default function ResultCard({ offer }: { offer: OfferVM }) {
+    const uah = formatUAH(toUAH(offer.price, "usd"));
     return (
         <article className="card">
             {offer.image ? (
@@ -39,11 +23,14 @@ export default function ResultCard({ offer }: { offer: OfferVM }) {
                 {offer.startDate && (
                     <div className="card__meta">
                         <div className="card__metaLabel">Старт туру</div>
-                        <div className="card__metaValue">{formatDate(offer.startDate)}</div>
+                        <div className="card__metaValue">{formatDateUA(offer.startDate)}</div>
                     </div>
                 )}
-                <div className="card__price">{formatMoney(offer.price)}</div>
-                <a className="card__link" href={offer.url || "#"} target="_blank" rel="noreferrer">
+                <div className="card__price">{uah}</div>
+                <a
+                    className="card__link"
+                    href={`#/tour?priceId=${offer.id}&hotelId=${offer.hotelId}`}
+                >
                     Відкрити ціну
                 </a>
             </div>
